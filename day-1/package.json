@@ -1,0 +1,19 @@
+{
+  "name": "day-1",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "npx tsc",
+    "test": "npm run build && jest"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^20.10.3",
+    "typescript": "^5.3.2"
+  },
+  "dependencies": {
+    "jest": "^29.7.0"
+  }
+}
