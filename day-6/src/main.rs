@@ -1,7 +1,4 @@
-use std::{
-    io::{self, BufRead},
-    ops::Index,
-};
+use std::ops::Index;
 
 fn parse_lines(time: &str, distance: &str) -> Vec<(usize, usize)> {
     let time = time.split_once(':').map(|part| part.1).unwrap();
@@ -25,7 +22,7 @@ fn main() {
     let input = parse_lines(line1, line2);
 
     let solutions_for_inputs: usize = input.into_iter().map(|x| find_number_of_ways(x)).product();
-    assert_eq!(solutions_for_inputs, 288);
+    assert_eq!(solutions_for_inputs, 71503);
     let mut iterator = include_str!("input").split('\n');
     let line1 = iterator.next().unwrap();
     let line2 = iterator.next().unwrap();
