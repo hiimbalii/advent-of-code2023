@@ -27,12 +27,18 @@ describe("findSymbols", () => {
     const [result] = findSymbols(input);
     expect(result).not.toEqual(expect.arrayContaining(dots));
   });
-  it("should find everything else", () => {
+  it("should find +, - ", () => {
     const symbols: Index[] = [
-      [0, 2],
       [1, 1],
-      [1, 2],
       [1, 3],
+    ];
+    const [result] = findSymbols(input);
+    expect(result).toEqual(expect.arrayContaining(symbols));
+  });
+  it("should find other symbols", () => {
+    const symbols: Index[] = [
+      [0, 3],
+      [1, 2],
     ];
     const [result] = findSymbols(input);
     expect(result).toEqual(expect.arrayContaining(symbols));
