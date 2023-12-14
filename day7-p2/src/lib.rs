@@ -1,4 +1,8 @@
-use std::{cmp::Ordering, collections::HashMap};
+use std::{
+    cmp::Ordering,
+    collections::HashMap,
+    ops::{Index, IndexMut},
+};
 
 #[derive(PartialEq, Eq, Ord, Debug, Hash, Clone, Copy)]
 enum Card {
@@ -111,14 +115,24 @@ impl From<&str> for Hand {
             }
         }
         let mut cards_map: Vec<(Card, usize)> = cards_map.into_iter().collect();
-        cards_map.sort_by(|a, b| b.1.cmp(&a.1));
-        if let Some((_, number)) = cards_map.into_iter().find_map(|(card, nr)| match card {
-            Card::Joker => Some((card, nr)),
-            _ => None,
-        }) {
-            cards_map.first_mut().unwrap().1 += 1;
+        let mut offset = 0;
+        let mut joker_map = cards_map
+            .clone()
+            .into_iter()
+            .enumerate()
+            .map(|(idx, (card, nr))| match card {
+                Card::Joker => Some((idx, nr)),
+                _ => None,
+            });
+
+        if joker_map.clone().any(|o| o.is_none()) {
+            if let Some(Some((idx, number))) = joker_map.find(|o| o.is_some()) {
+                offset = number;
+                cards_map.remove(idx);
+            }
         }
-        return match (cards_map.len(), cards_map.first().unwrap().1) {
+        cards_map.sort_by(|a, b| b.1.cmp(&a.1));
+        return match (cards_map.len(), cards_map.first().unwrap().1 + offset) {
             (1, 5) => Hand::FiveOfAKind(cards),
             (2, 3) => Hand::FullHouse(cards),
             (2, 4) => Hand::FourOfAKind(cards),
@@ -168,9 +182,9 @@ impl Ord for Hand {
 struct Line(Hand, usize);
 impl From<&str> for Line {
     fn from(value: &str) -> Self {
-        let hand = &value[0..5];
+        let hand = dbg!(&value[0..5]);
         let winnings = &value[6..];
-        Line(hand.into(), winnings.parse::<usize>().unwrap())
+        Line(dbg!(hand.into()), winnings.parse::<usize>().unwrap())
     }
 }
 
@@ -274,5 +288,19 @@ mod test {
         );
 
         //High card, where all cards' labels are distinct:
+    }
+    #[test]
+    fn joker() {
+        let hand = Hand::from("32T3J");
+        assert_eq!(
+            hand,
+            Hand::ThreeOfAKind(vec![
+                Card::Three,
+                Card::Two,
+                Card::Ten,
+                Card::Three,
+                Card::Joker
+            ])
+        )
     }
 }
