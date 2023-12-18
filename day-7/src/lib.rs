@@ -31,25 +31,6 @@ impl PartialOrd<usize> for Card {
         Some(usize::from(self).cmp(other))
     }
 }
-impl From<&Card> for usize {
-    fn from(value: &Card) -> Self {
-        match value {
-            Card::Two => 2,
-            Card::Three => 3,
-            Card::Four => 4,
-            Card::Five => 5,
-            Card::Six => 6,
-            Card::Seven => 7,
-            Card::Eight => 8,
-            Card::Nine => 9,
-            Card::Ten => 10,
-            Card::Jumbo => 10,
-            Card::Queen => 11,
-            Card::King => 12,
-            Card::Ace => 13,
-        }
-    }
-}
 impl From<char> for Card {
     fn from(value: char) -> Self {
         match value {
@@ -70,7 +51,28 @@ impl From<char> for Card {
         }
     }
 }
+impl From<&Card> for usize {
+    fn from(value: &Card) -> Self {
+        match value {
+            Card::Two => 2,
+            Card::Three => 3,
+            Card::Four => 4,
+            Card::Five => 5,
+            Card::Six => 6,
+            Card::Seven => 7,
+            Card::Eight => 8,
+            Card::Nine => 9,
+            Card::Ten => 10,
+            Card::Jumbo => 10,
+            Card::Queen => 11,
+            Card::King => 12,
+            Card::Ace => 13,
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Eq)]
+//Probably not the best way but im not refactoring
 enum Hand {
     FiveOfAKind(Vec<Card>),
     FourOfAKind(Vec<Card>),
@@ -82,6 +84,7 @@ enum Hand {
 }
 
 impl Hand {
+    // This is why not lol
     fn get_hand(&self) -> Vec<Card> {
         match self {
             Hand::FiveOfAKind(c) => c.clone(),
@@ -93,13 +96,9 @@ impl Hand {
             Hand::HighHand(c) => c.clone(),
         }
     }
-}
-
-impl From<&str> for Hand {
-    fn from(value: &str) -> Self {
-        let cards: Vec<Card> = value.chars().map(Card::from).collect();
+    fn get_all_to_first_ratio(cards: &Vec<Card>) -> (usize, usize) {
         let mut cards_map: HashMap<Card, usize> = HashMap::new();
-        for card in &cards {
+        for card in cards.into_iter() {
             if cards_map.contains_key(&card) {
                 let card = cards_map.get_mut(&card).unwrap();
                 *card += 1;
@@ -109,14 +108,22 @@ impl From<&str> for Hand {
         }
         let mut cards_map: Vec<(Card, usize)> = cards_map.into_iter().collect();
         cards_map.sort_by(|a, b| b.1.cmp(&a.1));
-        return match (cards_map.len(), cards_map.first().unwrap()) {
-            (1, (_, 5)) => Hand::FiveOfAKind(cards),
-            (2, (_, 3)) => Hand::FullHouse(cards),
-            (2, (_, 4)) => Hand::FourOfAKind(cards),
-            (3, (_, 3)) => Hand::ThreeOfAKind(cards),
-            (3, (_, 2)) => Hand::TwoPairs(cards),
-            (4, (_, 2)) => Hand::OnePair(cards),
-            (5, (_, 1)) => Hand::HighHand(cards),
+        (cards_map.len(), cards_map.first().unwrap().1)
+    }
+}
+
+impl From<&str> for Hand {
+    fn from(value: &str) -> Self {
+        let cards: Vec<Card> = value.chars().map(Card::from).collect();
+        let (nr_of_cards, qty_of_first) = Hand::get_all_to_first_ratio(&cards);
+        return match (nr_of_cards, qty_of_first) {
+            (1, 5) => Hand::FiveOfAKind(cards),
+            (2, 3) => Hand::FullHouse(cards),
+            (2, 4) => Hand::FourOfAKind(cards),
+            (3, 2) => Hand::TwoPairs(cards),
+            (3, 3) => Hand::ThreeOfAKind(cards),
+            (4, 2) => Hand::OnePair(cards),
+            (5, 1) => Hand::HighHand(cards),
             _ => panic!(),
         };
     }
@@ -142,8 +149,8 @@ impl PartialOrd for Hand {
             return self
                 .get_hand()
                 .into_iter()
-                .enumerate()
-                .map(|(idx, x)| x.cmp(&other.get_hand()[idx]))
+                .zip(other.get_hand())
+                .map(|(left, right)| left.cmp(&right))
                 .find(|x| x.ne(&Ordering::Equal));
         } else {
             return Some(result);
@@ -161,7 +168,7 @@ impl From<&str> for Line {
     fn from(value: &str) -> Self {
         let hand = &value[0..5];
         let winnings = &value[6..];
-        Line(hand.into(), winnings.to_string().parse::<usize>().unwrap())
+        Line(hand.into(), winnings.parse::<usize>().unwrap())
     }
 }
 
