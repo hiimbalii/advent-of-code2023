@@ -10,7 +10,7 @@ enum Card {
     Seven,
     Eight,
     Nine,
-    T,
+    Ten,
     Jumbo,
     Queen,
     King,
@@ -42,7 +42,7 @@ impl From<&Card> for usize {
             Card::Seven => 7,
             Card::Eight => 8,
             Card::Nine => 9,
-            Card::T => 10,
+            Card::Ten => 10,
             Card::Jumbo => 10,
             Card::Queen => 11,
             Card::King => 12,
@@ -61,7 +61,7 @@ impl From<char> for Card {
             '7' => Card::Seven,
             '8' => Card::Eight,
             '9' => Card::Nine,
-            'T' => Card::T,
+            'T' => Card::Ten,
             'J' => Card::Jumbo,
             'Q' => Card::Queen,
             'K' => Card::King,
@@ -233,7 +233,13 @@ mod test {
         //Three of a kind, where three cards have the same label, and the remaining two cards are each different from any other card in the hand:
         assert_eq!(
             Hand::from("T9T8T"),
-            Hand::ThreeOfAKind(vec![Card::T, Card::Nine, Card::T, Card::Eight, Card::T])
+            Hand::ThreeOfAKind(vec![
+                Card::Ten,
+                Card::Nine,
+                Card::Ten,
+                Card::Eight,
+                Card::Ten
+            ])
         );
         //Two pair, where two cards share one label, two other cards share a second label, and the remaining card has a third label:
         assert_eq!(
