@@ -1,151 +1,85 @@
-use std::collections::HashMap;
-
-#[derive(Debug, PartialEq, Eq)]
-enum Direction {
-    Left,
-    Right,
+trait SeqFinder {
+    fn find_next_in_seq(self, last: i32) -> i32;
+    fn next_sequence(self) -> Self;
 }
-impl From<char> for Direction {
-    fn from(value: char) -> Self {
-        match value {
-            'L' => Direction::Left,
-            'R' => Direction::Right,
-            _ => panic!("Check your input"),
+impl SeqFinder for Vec<i32> {
+    fn next_sequence(mut self) -> Self {
+        let mut iter = self.clone();
+        iter.truncate(self.len() - 1);
+        iter.shrink_to_fit();
+        let iter = iter.into_iter();
+        iter.enumerate()
+            .map(|(idx, _)| self[idx + 1] - self[idx])
+            .collect()
+    }
+    fn find_next_in_seq(self, last: i32) -> i32 {
+        self[self.len() - 1] + last
+    }
+}
+
+struct Line(Vec<i32>);
+impl Line {
+    fn find_next(self) -> i32 {
+        let mut stack: Vec<Vec<i32>> = vec![self.0.clone()];
+        while !stack.last().unwrap().into_iter().all(|v| *v == 0) {
+            stack.push(stack.last().unwrap().clone().next_sequence())
         }
-    }
-}
-
-#[derive(Debug)]
-struct Directions<'a>(&'a str, usize);
-impl<'a> From<&'a str> for Directions<'a> {
-    fn from(value: &'a str) -> Self {
-        Directions(value, 0)
-    }
-}
-impl Iterator for Directions<'_> {
-    type Item = Direction;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let curr = self.0.chars().nth(self.1).map(Direction::from);
-        if curr.is_none() {
-            self.1 = 0;
-            return self.next();
+        //walk stack
+        // last = find_next(last)
+        let mut result = 0;
+        for i in stack {
+            result = i.find_next_in_seq(result);
         }
-        self.1 += 1;
-        curr
+        result
+    }
+}
+impl From<&str> for Line {
+    fn from(value: &str) -> Self {
+        Line(
+            value
+                .split(' ')
+                .map(str::parse::<i32>)
+                .map(Result::unwrap)
+                .collect(),
+        )
     }
 }
 
-#[derive(Debug)]
-struct Nav<'a>(
-    HashMap<String, (String, String)>,
-    Directions<'a>,
-    (String, String),
-);
+pub fn solve<'a>(input: impl Iterator<Item = &'a str>) -> i32 {
+    let lines = input.into_iter().map(Line::from).map(Line::find_next);
 
-impl<'a> Nav<'a> {
-    fn new(lines: HashMap<String, (String, String)>, directions: Directions<'a>) -> Self {
-        Nav::<'a>(lines.clone(), directions, lines.get("AAA").unwrap().clone())
-    }
-}
-impl Iterator for Nav<'_> {
-    type Item = String;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let next;
-        self.2 = match self.1.next().expect("to loop infinitely") {
-            Direction::Left => {
-                next = Some(self.2 .0.clone());
-                self.0.get(&self.2 .0).clone().unwrap().clone()
-            }
-            Direction::Right => {
-                next = Some(self.2 .1.clone());
-                self.0.get(&self.2 .1).clone().unwrap().clone()
-            }
-        };
-        next
-    }
-}
-
-pub fn solve<'a>(input: impl Iterator<Item = &'a str>) -> usize {
-    let mut input = input.into_iter();
-    let directions: Directions = input.next().expect("Check your input").into();
-    input.next();
-    let lines: HashMap<String, (String, String)> = input
-        .into_iter()
-        .map(|str| str.replace(' ', "").replace('(', "").replace(')', ""))
-        .map(|str| {
-            let (key, value) = str.split_at(3);
-            let (left, right) = value[1..].split_at(3);
-            (key.to_string(), (left.to_string(), right[1..].to_string()))
-        })
-        .collect();
-    // findallmap -> match char[2] {a=>some chars}
-    // foreach a -> run find with start of that one (code below)
-    let navigation = Nav::new(lines, directions);
-    navigation
-        .enumerate()
-        .find(|(_, key)| key == "ZZZ")
-        .unwrap()
-        .0
-        + 1
+    lines.sum()
 }
 
 #[cfg(test)]
 mod test {
-    use crate::{solve, Direction, Directions, Nav};
+    use crate::{solve, Line, SeqFinder};
 
     #[test]
     fn run() {
-        let iterator = include_str!("input.validate2").split('\n');
-        let solution = solve(iterator);
-        assert_eq!(solution, 2);
         let iterator = include_str!("input.validate").split('\n');
         let solution = solve(iterator);
-        assert_eq!(solution, 6);
+        assert_eq!(solution, 114);
         let iterator = include_str!("input").split('\n');
         let solution = solve(iterator);
         println!("solution: {}", solution)
     }
+
     #[test]
-    fn find() {
-        let dir = Directions::from("LRL");
-        let input = vec![
-            ("AAA".to_string(), ("BBB".to_string(), "CCC".to_string())),
-            ("BBB".to_string(), ("AAA".to_string(), "AAA".to_string())),
-            ("CCC".to_string(), ("CCC".to_string(), "AAA".to_string())),
-        ]
-        .into_iter()
-        .collect();
-        let iter = Nav::new(input, dir);
-        let ccc = iter.enumerate().find(|(_, x)| x == "CCC");
-        assert!(ccc.is_some());
-        assert_eq!(ccc.unwrap(), (4, "CCC".to_string()))
+    fn parse() {
+        assert_eq!(Line::from("0 -3 6 12").0, vec![0, -3, 6, 12]);
     }
     #[test]
-    fn nav() {
-        let dir = Directions::from("L");
-        let input = vec![
-            ("AAA".to_string(), ("BBB".to_string(), "CCC".to_string())),
-            ("BBB".to_string(), ("CCC".to_string(), "CCC".to_string())),
-            ("CCC".to_string(), ("CCC".to_string(), "CCC".to_string())),
-        ]
-        .into_iter()
-        .collect();
-        let mut iter = Nav::new(input, dir);
-        assert_eq!(iter.next().unwrap(), "BBB");
-        assert_eq!(iter.next().unwrap(), "CCC");
+    fn next_seq() {
+        assert_eq!(
+            Line::from("0 3 6 9 12 15").0.next_sequence(),
+            vec![3, 3, 3, 3, 3]
+        );
     }
     #[test]
-    fn directions() {
-        let mut iter = Directions::from("LLRLR");
-        assert_eq!(iter.next().unwrap(), Direction::Left);
-        assert_eq!(iter.next().unwrap(), Direction::Left);
-        assert_eq!(iter.next().unwrap(), Direction::Right);
-        assert_eq!(iter.next().unwrap(), Direction::Left);
-        assert_eq!(iter.next().unwrap(), Direction::Right);
-        assert_eq!(iter.next().unwrap(), Direction::Left);
-        assert_eq!(iter.next().unwrap(), Direction::Left);
-        assert_eq!(iter.next().unwrap(), Direction::Right);
+    fn find_next() {
+        assert_eq!(Line::from("0 3 6 9 12 15").find_next(), 18);
+        assert_eq!(Line::from("1 3 6 10 15 21").find_next(), 28);
+        assert_eq!(Line::from("10 13 16 21 30 45").find_next(), 68);
     }
 }
