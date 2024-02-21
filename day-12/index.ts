@@ -1,28 +1,13 @@
+import { option } from "fp-ts";
+import { filterMapWithIndex, flatMap, map, reduce } from "fp-ts/Array";
 import { pipe } from "fp-ts/function";
-import {
-  filterMap,
-  filterMapWithIndex,
-  flatMap,
-  foldLeft,
-  map,
-  mapWithIndex,
-  reduce,
-  replicate,
-} from "fp-ts/Array";
-import { ap } from "fp-ts/lib/Apply";
-import { fold } from "fp-ts/lib/Tree";
-import * as O from "fp-ts/Option";
+import { Option } from "fp-ts/Option";
 
 type Row = {
   pattern: string;
   damagedSequences: number[];
 };
-const splitString = (str: string): string[] => str.split("");
-const tuplefy =
-  <A, B>(fn: (a: A) => B) =>
-  (input: A): [A, B] => {
-    return [input, pipe(input, fn)];
-  };
+
 /********
  * Parse input
  */
@@ -39,70 +24,96 @@ const parseInput = (input: string[]) => pipe(input, map(parseLine));
  * Solve problem
  */
 
-export const replaceWithHash: (
-  pattern: string,
-  start: number,
-  length: number
-) => string = (pattern, start, length) =>
-  pattern.slice(0, start) +
-  replicate(length, "#").join("") +
-  pattern.slice(start + length);
+// pattern and startIdx
+type IterationValue = [string, number];
 
-export const replaceNextNIfPossible: (
+const changeIntoHash = (
   pattern: string,
-  length: number
-) => (start: number) => O.Option<[string, number]> =
-  (pattern, length) => (start) =>
-    pipe(pattern.slice(start, start + length), (str) =>
-      str.includes(".") || str.length !== length
-        ? O.none
-        : O.some([replaceWithHash(pattern, start, length), start + length])
+  startIdx: number,
+  seqLen: number
+): string => {
+  const hashSeq = "#".repeat(seqLen) + ".";
+  return pipe(pattern, replaceAt(startIdx, hashSeq));
+};
+
+const replaceAt =
+  (index: number, replacement: string) =>
+  (input: string): string =>
+    input.slice(0, index).replaceAll("?", ".") +
+    replacement +
+    input.slice(index + replacement.length);
+
+const canReplace = (
+  pattern: string,
+  startIdx: number,
+  endIdx: number,
+  seqLen: number
+) =>
+  pipe(
+    pattern.slice(startIdx, endIdx),
+    (str) =>
+      str.includes(".") ||
+      str.length !== seqLen ||
+      pattern.at(endIdx) === "#" ||
+      (startIdx > 0 && pattern.at(startIdx - 1) === "#")
+  );
+
+const replaceFromIdx: (
+  startIdx: number,
+  pattern: string,
+  seqLen: number
+) => (currentIdx: number) => Option<IterationValue> =
+  (startIdx, pattern, seqLen) => (currentIdx) =>
+    canReplace(
+      pattern,
+      startIdx + currentIdx,
+      startIdx + currentIdx + seqLen,
+      seqLen
+    )
+      ? option.none
+      : (() => {
+          return option.of([
+            changeIntoHash(pattern, startIdx + currentIdx, seqLen),
+            startIdx + currentIdx + seqLen + 1, // skip one for a spearator dot
+          ]);
+        })();
+
+const findAllVariations: (
+  seqLen: number
+) => ([pattern, start]: IterationValue) => IterationValue[] =
+  (seqLen: number) =>
+  ([pattern, start]) =>
+    pipe(
+      pattern.slice(start).split(""),
+      filterMapWithIndex(replaceFromIdx(start, pattern, seqLen))
     );
 
-export const createValidVariations: (
+const findPotentialCombinationsForDamagedSeq: (
+  preaviousVariations: IterationValue[],
   sequenceLength: number
-) => (pattern: string) => [string, number][] = (sequenceLength) => (pattern) =>
-  pipe(
-    pattern,
-    splitString,
-    filterMapWithIndex(replaceNextNIfPossible(pattern, sequenceLength)),
-    map(([pattern, index]) => [
-      pattern.slice(0, index).replace("?", ".") + pattern.slice(index),
-      index,
+) => IterationValue[] = (previousVariatons, seqLen) =>
+  pipe(previousVariatons, flatMap(findAllVariations(seqLen)));
+
+export const makeValidCombinations: (row: Row) => IterationValue[] = (row) =>
+  pipe(row, ({ pattern, damagedSequences }) =>
+    damagedSequences.reduce(findPotentialCombinationsForDamagedSeq, [
+      [pattern, 0] as IterationValue,
     ])
   );
 
-export const getAllFits: (
-  sequenceLength: number
-) => (previous: [string, number][]) => [string, number][] =
-  (sequenceLength) => (previous) =>
-    map(([prevPattern, prevIndex]: [string, number]) =>
-      pipe(
-        prevPattern,
-        (str: string) => str.slice(prevIndex),
-        createValidVariations(sequenceLength)
-      )
-    )(previous);
+const countValidCombinations: (row: Row) => number = (row) =>
+  pipe(row, makeValidCombinations, (l: unknown[]) => l.length);
 
-export const findCombinations: (row: Row) => string[] = ({
-  pattern,
-  damagedSequences,
-}) =>
+export const solve = (rows: Row[]) =>
   pipe(
-    damagedSequences,
-    reduce(
-      [[pattern, 0] as [string, number]],
-      (acc, sequenceLength: number) => {
-        return pipe(acc, flatMap(getAllFits(sequenceLength)));
-      }
-    ),
-    map(([pattern]) => pattern)
-    // (list) => list.length
+    rows,
+    map(countValidCombinations),
+    reduce(0, (acc, num) => acc + num)
   );
 
 /********
  * Run
  */
 export const run = (input: string[]) => {
-  return 35;
+  return pipe(input, parseInput, solve);
 };
