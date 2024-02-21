@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 LR
 
 11A = (11B, XXX)
@@ -8,3 +9,10 @@ LR
 22C = (22Z, 22Z)
 22Z = (22B, 22B)
 XXX = (XXX, XXX)
+=======
+LLR
+
+AAA = (BBB, BBB)
+BBB = (AAA, ZZZ)
+ZZZ = (ZZZ, ZZZ)
+>>>>>>> 981e6a5dd9c7e83ad326f56dedf7d7aa0f497073

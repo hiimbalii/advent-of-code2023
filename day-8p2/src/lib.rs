@@ -15,7 +15,11 @@ impl From<char> for Direction {
     }
 }
 
+<<<<<<< HEAD
 #[derive(Debug, Clone)]
+=======
+#[derive(Debug)]
+>>>>>>> 981e6a5dd9c7e83ad326f56dedf7d7aa0f497073
 struct Directions<'a>(&'a str, usize);
 impl<'a> From<&'a str> for Directions<'a> {
     fn from(value: &'a str) -> Self {
@@ -44,12 +48,17 @@ struct Nav<'a>(
 );
 
 impl<'a> Nav<'a> {
+<<<<<<< HEAD
     fn new(
         lines: HashMap<String, (String, String)>,
         directions: Directions<'a>,
         start: (String, String),
     ) -> Self {
         Nav::<'a>(lines, directions, start)
+=======
+    fn new(lines: HashMap<String, (String, String)>, directions: Directions<'a>) -> Self {
+        Nav::<'a>(lines.clone(), directions, lines.get("AAA").unwrap().clone())
+>>>>>>> 981e6a5dd9c7e83ad326f56dedf7d7aa0f497073
     }
 }
 impl Iterator for Nav<'_> {
@@ -70,6 +79,7 @@ impl Iterator for Nav<'_> {
         next
     }
 }
+<<<<<<< HEAD
 struct ArrayOfNavs<'a>(Vec<Nav<'a>>);
 impl Iterator for ArrayOfNavs<'_> {
     type Item = Vec<String>;
@@ -87,6 +97,8 @@ impl<'a> From<Vec<Nav<'a>>> for ArrayOfNavs<'a> {
         ArrayOfNavs::<'a>(val)
     }
 }
+=======
+>>>>>>> 981e6a5dd9c7e83ad326f56dedf7d7aa0f497073
 
 pub fn solve<'a>(input: impl Iterator<Item = &'a str>) -> usize {
     let mut input = input.into_iter();
@@ -101,6 +113,7 @@ pub fn solve<'a>(input: impl Iterator<Item = &'a str>) -> usize {
             (key.to_string(), (left.to_string(), right[1..].to_string()))
         })
         .collect();
+<<<<<<< HEAD
     //
     let lines: Vec<Nav> = lines
         .clone()
@@ -120,6 +133,16 @@ pub fn solve<'a>(input: impl Iterator<Item = &'a str>) -> usize {
         })
         .map(|(idx, _)| idx)
         .unwrap()
+=======
+    // findallmap -> match char[2] {a=>some chars}
+    // foreach a -> run find with start of that one (code below)
+    let navigation = Nav::new(lines, directions);
+    navigation
+        .enumerate()
+        .find(|(_, key)| key == "ZZZ")
+        .unwrap()
+        .0
+>>>>>>> 981e6a5dd9c7e83ad326f56dedf7d7aa0f497073
         + 1
 }
 
@@ -129,6 +152,12 @@ mod test {
 
     #[test]
     fn run() {
+<<<<<<< HEAD
+=======
+        let iterator = include_str!("input.validate2").split('\n');
+        let solution = solve(iterator);
+        assert_eq!(solution, 2);
+>>>>>>> 981e6a5dd9c7e83ad326f56dedf7d7aa0f497073
         let iterator = include_str!("input.validate").split('\n');
         let solution = solve(iterator);
         assert_eq!(solution, 6);
@@ -146,7 +175,11 @@ mod test {
         ]
         .into_iter()
         .collect();
+<<<<<<< HEAD
         let iter = Nav::new(input, dir, ("BBB".to_string(), "CCC".to_string()));
+=======
+        let iter = Nav::new(input, dir);
+>>>>>>> 981e6a5dd9c7e83ad326f56dedf7d7aa0f497073
         let ccc = iter.enumerate().find(|(_, x)| x == "CCC");
         assert!(ccc.is_some());
         assert_eq!(ccc.unwrap(), (4, "CCC".to_string()))
@@ -161,7 +194,11 @@ mod test {
         ]
         .into_iter()
         .collect();
+<<<<<<< HEAD
         let mut iter = Nav::new(input, dir, ("BBB".to_string(), "CCC".to_string()));
+=======
+        let mut iter = Nav::new(input, dir);
+>>>>>>> 981e6a5dd9c7e83ad326f56dedf7d7aa0f497073
         assert_eq!(iter.next().unwrap(), "BBB");
         assert_eq!(iter.next().unwrap(), "CCC");
     }
